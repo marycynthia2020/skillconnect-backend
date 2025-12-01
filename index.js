@@ -1,28 +1,36 @@
 const express = require("express");
+const db = require("./models");
+const authRoute = require("./routes/auth.routes");
 require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
-const sequelize = 
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send(`   <p>helo</p>`);
+  res.send("Hello! Welcome to SkillConnect");
 });
 
+// use all routes
+app.use('/auth', authRoute)
+
+//app error handler
 app.use((req, res, err, next) => {
-  res.status(500).send("Error connecting to the server");
+  res.status(500).json({
+    success: false,
+    message: 'Internal server errror'
+  });
 });
 
-
-async function startServer() {
-    
-  app.listen(PORT, err => {
-    if (err) {
-      console.log("Error connecting to the server");
-      return;
-    }
-    console.log(`server is running on PORT ${PORT}`);
-  });
+async function startServer() { //starting the server, connecting to the ddatabase and initializing sequelize
+  try {
+    await db.sequelize.authenticate()
+    console.log('Database connection succesfull')
+    app.listen(PORT, ()=>{
+      console.log(`Server is running on port ${PORT}`)
+    })
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 startServer()
