@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
 app.use('/auth', authRoute)
 
 //app error handler
-app.use((req, res, err, next) => {
+app.use((err, req, res, next) => {
   res.status(500).json({
     success: false,
     message: 'Internal server errror'

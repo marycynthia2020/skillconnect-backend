@@ -1,21 +1,17 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-  class Artisan extends Model {
+  class RevokedToken extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association
-      Artisan.belongsTo(models.User, {
-        foreignKey: "user_id",
-        as: "user",
-      });
+      // define association here
     }
   }
-  Artisan.init(
+  RevokedToken.init(
     {
       id: {
         allowNull: false,
@@ -23,32 +19,22 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         type: DataTypes.INTEGER,
       },
-      userId: {
-        type: DataTypes.INTEGER,
+      token: {
+        type: DataTypes.STRING,
         allowNull: false,
-        field: "user_id",
-        references: {
-          model: "users",
-          key: "id",
-        },
       },
-      isVerified: {
-        type: DataTypes.BOOLEAN,
+      expiresAt: {
+        type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: false,
-        field: "is_verified",
-      },
-      about: {
-        type: DataTypes.STRING(160),
-        allowNull: true,
+        field: "expires_at",
       },
     },
     {
       sequelize,
-      modelName: "Artisan",
-      tableName: "artisans",
+      modelName: "RevokedToken",
+      tableName: "revoked_tokens",
       timestamps: false,
     }
   );
-  return Artisan;
+  return RevokedToken;
 };

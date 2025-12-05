@@ -1,54 +1,54 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-  class Artisan extends Model {
+  class RefreshToken extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association
-      Artisan.belongsTo(models.User, {
+      RefreshToken.belongsTo(models.User, {
         foreignKey: "user_id",
         as: "user",
       });
     }
   }
-  Artisan.init(
+  RefreshToken.init(
     {
       id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
         type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
       },
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         field: "user_id",
+        unique: true,
+        onDelete: "CASCADE",
         references: {
           model: "users",
           key: "id",
         },
       },
-      isVerified: {
-        type: DataTypes.BOOLEAN,
+      token: {
+        type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: false,
-        field: "is_verified",
       },
-      about: {
-        type: DataTypes.STRING(160),
-        allowNull: true,
+      expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: "expires_at",
       },
     },
     {
       sequelize,
-      modelName: "Artisan",
-      tableName: "artisans",
-      timestamps: false,
+      modelName: "RefreshToken",
+      tableName: "refresh_tokens",
+      timestamps: false
     }
   );
-  return Artisan;
+  return RefreshToken;
 };

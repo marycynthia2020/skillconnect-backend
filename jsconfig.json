@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "checkJs": true
+  },
+  "include": ["types/**/*.d.ts", "models/**/*.js", "controllers/**/*.js"]
+}

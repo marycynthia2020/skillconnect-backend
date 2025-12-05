@@ -27,6 +27,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'user_id',
         as: 'client'
       });
+      User.hasOne(models.RefreshToken, {
+        foreignKey: 'user_id',
+        as: 'refreshToken'
+      })
     }
   }
   User.init(

@@ -1,13 +1,10 @@
 const { Op } = require("sequelize");
-const db = require("../models");
+const {User, Artisan, Client, RefreshToken, RevokedToken} = require("../models")
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const secretKey = process.env.SECRET_KEY;
 
-/** @type {import('sequelize').ModelStatic<import('../models').User>} */
-const User = db.User;
-const Artisan = db.Artisan;
-const Client = db.Client;
 
 async function register(req, res, next) {
   const { firstName, lastName, email, phoneNumber, password, currentRole } =
@@ -175,28 +172,146 @@ async function login(req, res, next) {
     }
     const payload = {
       id: existingUser.id,
-      email: existingUser.email
-    }
-    const token = jwt.sign(payload, process.env.SECRET_KEY, {
-      expiresIn: "24h",
+      email: existingUser.email,
+    };
+    const accessToken = jwt.sign(payload, secretKey, {
+      expiresIn: "24hr",
     });
 
-    const existingUserModel = existingUser.currentRole == "artisan" ? Artisan : Client;
+    const refreshToken = jwt.sign(payload, secretKey, {
+      expiresIn: "7d",
+    });
+    const decodedRefreshToken = jwt.verify(refreshToken, secretKey);
+    const expiresAt = new Date(decodedRefreshToken.exp * 1000);
+
+    await RefreshToken.create({
+      userId: existingUser.id,
+      token: refreshToken,
+      expiresAt,
+    });
+    const existingUserModel =
+      existingUser.currentRole == "artisan" ? Artisan : Client;
 
     const roleDetails = await existingUserModel.findOne({
       where: { userId: existingUser.id },
     });
 
-    const safeUser = existingUser.toJSON();
-    delete safeUser.password;
-    safeUser.roleDetails = roleDetails;
-    // delete safeUser.roleDetails.user_id
+    const userDetails = existingUser.toJSON();
+    delete userDetails.password;
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login Successful",
-      token,
-      safeUser
+      accessToken,
+      refreshToken,
+      userDetails,
+      roleDetails,
+    });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+}
+
+async function logout(req, res, next) {
+  const { refreshToken } = req.body;
+  let decodedRefreshToken;
+  let decodedAccessToken;
+
+  if (!refreshToken || typeof refreshToken !== "string") {
+    return res.status(400).json({
+      success: false,
+      message: "Refresh token is required and must be a string",
+    });
+  }
+  try {
+    const refreshTokenRecord = await RefreshToken.findOne({
+      where: { token: refreshToken },
+    });
+
+    if (!refreshTokenRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "Refresh token not found",
+      });
+    }
+
+    decodedRefreshToken = jwt.verify(refreshToken, secretKey);
+
+    const accessToken = req.headers.authorization?.split(" ")[1];
+    if (!accessToken || typeof accessToken !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Access token is required and must be a string",
+      });
+    }
+
+    decodedAccessToken = jwt.verify(accessToken, secretKey);
+    const expiresAt = new Date(decodedAccessToken.exp * 1000);
+
+    if (decodedAccessToken.id !== decodedRefreshToken.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Token mismatch",
+      });
+    }
+
+    await refreshTokenRecord.destroy();
+    await RevokedToken.create({
+      token: accessToken,
+      expiresAt,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout succesful",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function refresh(req, res, next) {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken || typeof refreshToken !== "string") {
+    return res.status(400).json({
+      success: false,
+      message: "Refresh token is required and must be a string",
+    });
+  }
+  try {
+    const refreshTokenRecord = await RefreshToken.findOne({
+      where: { token: refreshToken },
+    });
+
+    if (!refreshTokenRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "Refresh token not found",
+      });
+    }
+
+    if (refreshTokenRecord.expiresAt < new Date()) {
+      await refreshTokenRecord.destroy();
+      return res.status(401).json({
+        success: false,
+        message: "Expired token",
+      });
+    }
+
+    const decodedRefreshToken = jwt.verify(refreshToken, secretKey);
+    const payload = {
+      userId: decodedRefreshToken.id,
+      email: decodedRefreshToken.email,
+    };
+    const accessToken = jwt.sign(payload, secretKey, {
+      expiresIn: "15m",
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Token succesfully generated",
+      accessToken,
     });
   } catch (error) {
     next(error);
@@ -206,4 +321,6 @@ async function login(req, res, next) {
 module.exports = {
   register,
   login,
+  logout,
+  refresh,
 };

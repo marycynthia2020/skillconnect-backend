@@ -1,15 +1,6 @@
-/**
- * @typedef {import('sequelize').Model} Model
- * @typedef {import('sequelize').Sequelize} Sequelize
- * @typedef {import('sequelize').ModelStatic<Model>} ModelStatic
- */
-
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-   /**
- * @extends Model
- */
   class Client extends Model {
     /**
      * Helper method for defining associations.
@@ -19,9 +10,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Client.belongsTo(models.User, {
-        foreignKey: 'user_id',
-        as: 'user'
-      })
+        foreignKey: "user_id",
+        as: "user",
+      });
     }
   }
   Client.init(
@@ -35,14 +26,18 @@ module.exports = (sequelize, DataTypes) => {
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        field: 'user_id'
+        field: "user_id",
+        references: {
+          model: "users",
+          key: "id",
+        },
       },
     },
     {
       sequelize,
       modelName: "Client",
       tableName: "clients",
-      timestamps:false
+      timestamps: false,
     }
   );
   return Client;
