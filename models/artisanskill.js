@@ -1,22 +1,26 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-  class Artisan extends Model {
+  class ArtisanSkill extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association
-      Artisan.belongsTo(models.User, {
+      ArtisanSkill.belongsTo(models.User, {
         foreignKey: "userId",
-        as: "user",
-      });
+        as: "user"
+      })
+
+      ArtisanSkill.belongsTo(models.Skill, {
+        foreignKey: "skillId",
+        as: "skill",
+      })
     }
   }
-  Artisan.init(
-                   {
+  ArtisanSkill.init(
+    {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -25,30 +29,29 @@ module.exports = (sequelize, DataTypes) => {
       },
       userId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull:false,
         field: "user_id",
         references: {
           model: "users",
-          key: "id",
-        },
+          key: "id"
+        }
       },
-      isVerified: {
-        type: DataTypes.BOOLEAN,
+      skillId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: false,
-        field: "is_verified",
-      },
-      about: {
-        type: DataTypes.STRING(160),
-        allowNull: true,
-      },
+        field: "skill_id",
+        references: {
+          model: "skills",
+          key: "id"
+        }
+      }
     },
     {
       sequelize,
-      modelName: "Artisan",
-      tableName: "artisans",
+      modelName: "ArtisanSkill",
+      tableName: "artisan_skills",
       timestamps: false,
     }
   );
-  return Artisan;
+  return ArtisanSkill;
 };

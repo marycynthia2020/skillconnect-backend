@@ -1,13 +1,18 @@
 const { Op } = require("sequelize");
-const {User, Artisan, Client, RefreshToken, RevokedToken} = require("../models")
+const {
+  User,
+  Artisan,
+  Client,
+  RefreshToken,
+  RevokedToken,
+} = require("../models");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const secretKey = process.env.SECRET_KEY;
 
-
 async function register(req, res, next) {
-  const { firstName, lastName, email, phoneNumber, password, currentRole } =
+  const { firstName, lastName, email, phoneNumber, password, gender, currentRole } =
     req.body;
 
   if (
@@ -16,6 +21,7 @@ async function register(req, res, next) {
     !email ||
     !phoneNumber ||
     !password ||
+    !gender ||
     !currentRole
   ) {
     return res.status(400).json({
@@ -50,6 +56,9 @@ async function register(req, res, next) {
       .valid("artisan", "client")
       .default("client")
       .required(),
+      gender: Joi.string()
+      .valid("Male", "Female")
+      .required(),
   });
 
   const { error } = requestSchema.validate(req.body, {
@@ -64,13 +73,13 @@ async function register(req, res, next) {
   }
 
   try {
-    const existigUser = await User.findOne({
+    const existingUser = await User.findOne({
       where: {
         [Op.or]: [{ email }, { phoneNumber }],
       },
     });
 
-    if (existigUser) {
+    if (existingUser) {
       return res.status(409).json({
         success: false,
         message: "User with this email or phone number already exist",
@@ -84,7 +93,9 @@ async function register(req, res, next) {
       email,
       phoneNumber,
       password: hashedPasswword,
+      gender,
       currentRole,
+      country: "Nigeria" 
     };
     const createdUser = await User.create(newUser);
 
@@ -95,6 +106,7 @@ async function register(req, res, next) {
       message: "User registration succesful",
     });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 }
@@ -105,7 +117,7 @@ async function login(req, res, next) {
   if (!user || !password) {
     return res.status(400).json({
       success: false,
-      message: "All fields are required",
+      message: "All fields are r bequired",
     });
   }
 
@@ -159,7 +171,7 @@ async function login(req, res, next) {
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: "No user with this details found",
+        message: "Incorrect email or password",
       });
     }
 
@@ -167,15 +179,19 @@ async function login(req, res, next) {
     if (!match) {
       return res.status(401).json({
         success: false,
-        message: "Incorrect user password",
+        message: "Incorrect email or password",
       });
     }
+
+    await RefreshToken.destroy({
+      where: {userId: existingUser.id}
+    })
     const payload = {
       id: existingUser.id,
       email: existingUser.email,
     };
     const accessToken = jwt.sign(payload, secretKey, {
-      expiresIn: "24hr",
+      expiresIn: "24h",
     });
 
     const refreshToken = jwt.sign(payload, secretKey, {
@@ -203,14 +219,14 @@ async function login(req, res, next) {
       success: true,
       message: "Login Successful",
       accessToken,
-      refreshToken,
+      refreshToken,  // this needs to be sremoves and stored in httpp cookies later. It is not meant to be sent to the frontend
       userDetails,
       roleDetails,
     });
   } catch (error) {
-    console.log(error);
     next(error);
-  }
+    console.log(error)
+  } 
 }
 
 async function logout(req, res, next) {
@@ -302,11 +318,11 @@ async function refresh(req, res, next) {
 
     const decodedRefreshToken = jwt.verify(refreshToken, secretKey);
     const payload = {
-      userId: decodedRefreshToken.id,
+      id: decodedRefreshToken.id,
       email: decodedRefreshToken.email,
     };
     const accessToken = jwt.sign(payload, secretKey, {
-      expiresIn: "15m",
+      expiresIn: "24h",
     });
     return res.status(200).json({
       success: true,

@@ -1,10 +1,14 @@
 const express = require("express");
 const db = require("./models");
-const authRoute = require("./routes/auth.routes");
 require("dotenv").config();
 const app = express();
+const cookieParser = require('cookie-parser')
+const authRoute = require("./routes/auth.routes");
+const userRoute = require("./routes/user.routes")
+const artisanRoute = require("./routes/artisan.routes")
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Hello! Welcome to SkillConnect");
@@ -12,6 +16,8 @@ app.get("/", (req, res) => {
 
 // use all routes
 app.use('/auth', authRoute)
+app.use('/users', userRoute)
+app.use('/artisans',  artisanRoute)
 
 //app error handler
 app.use((err, req, res, next) => {

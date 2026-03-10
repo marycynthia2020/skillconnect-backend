@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "checkJs": true
+    "checkJs": false
   },
   "include": ["types/**/*.d.ts", "models/**/*.js", "controllers/**/*.js"]
 }

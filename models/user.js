@@ -19,17 +19,21 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       User.hasOne(models.Artisan, {
-        foreignKey: 'user_id',
+        foreignKey: "userId",
         as: 'artisan'
       });
 
       User.hasOne(models.Client, {
-        foreignKey: 'user_id',
+        foreignKey: "userId",
         as: 'client'
       });
       User.hasOne(models.RefreshToken, {
-        foreignKey: 'user_id',
+        foreignKey: "userId",
         as: 'refreshToken'
+      })
+      User.hasMany(models.ArtisanSkill, {
+        foreignKey: "userId",
+        as: "artisanSkills"
       })
     }
   }
@@ -94,7 +98,7 @@ module.exports = (sequelize, DataTypes) => {
         field: 'photo_url'
 
       },
-      nationality: {
+      country: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -108,6 +112,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
         field: 'rate_count'
+      },
+      isUserVerified: {
+        type: DataTypes.BOOLEAN,
+        allowNull:false,
+        defaultValue: false,
+        field: 'is_user_verified'
       },
       createdAt: {
         allowNull: false,
@@ -125,4 +135,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  return User;};
+  return User;
+};

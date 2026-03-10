@@ -9,11 +9,12 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       RefreshToken.belongsTo(models.User, {
-        foreignKey: "user_id",
+        foreignKey: "userId",
         as: "user",
       });
     }
   }
+  
   RefreshToken.init(
     {
       id: {

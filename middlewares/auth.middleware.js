@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { User } = require("../models");
+const { User, RevokedToken } = require("../models");
 const secretKey = process.env.SECRET_KEY;
 
 async function authMiddleware(req, res, next) {
@@ -12,6 +12,17 @@ async function authMiddleware(req, res, next) {
     });
   }
   try {
+    const revokedToken = await RevokedToken.findOne({
+      where: { token: accessToken },
+    });
+    
+    if (revokedToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Token revoked",
+      });
+    }
+
     const verifiedToken = jwt.verify(accessToken, secretKey);
     if (!verifiedToken) {
       return res.status(401).json({
@@ -19,7 +30,6 @@ async function authMiddleware(req, res, next) {
         message: "Unauthorized request",
       });
     }
-
     const user = await User.findOne({
       where: { id: verifiedToken.id, email: verifiedToken.email },
     });
